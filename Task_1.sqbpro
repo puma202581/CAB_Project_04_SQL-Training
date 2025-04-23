@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="Task_1.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="934"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="Manufacturers" custom_title="0" dock_id="2" table="4,13:mainManufacturers"/><dock_state state="000000ff00000000fd0000000100000002000002ae00000213fc0100000002fb000000160064006f0063006b00420072006f00770073006500310100000000000002ae0000000000000000fb000000160064006f0063006b00420072006f00770073006500320100000000ffffffff0000011800ffffff000002580000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="1.10">SELECT *
+FROM Products
+FULL OUTER JOIN Manufacturers ON products.Manufacturer = Manufacturers.Code;</sql><sql name="1.11">ALTER TABLE Products
+RENAME COLUMN Name to Product_Name; 
+
+ALTER TABLE Manufacturers
+RENAME COLUMN Name to Manufacturer_Name; 
+
+SELECT DISTINCT Product_Name, Price, Manufacturer_Name
+FROM Products
+FULL OUTER JOIN Manufacturers ON products.Manufacturer = Manufacturers.Code;</sql><sql name="1.12">-- Select the average price of each manufacturer's products, 
+-- showing only the manufacturer's code.
+
+SELECT DISTINCT Manufacturer, avg(PRICE)
+FROM Products
+GROUP BY Manufacturer;</sql><sql name="1.13">
+SELECT DISTINCT Manufacturer_Name, avg(PRICE)
+FROM Products
+LEFT JOIN Manufacturers ON products.Manufacturer = Manufacturers.Code
+GROUP BY Manufacturer_Name;</sql><sql name="1.14">-- Select the names of manufacturers with an average product price 
+-- larger than or equal to $150.
+
+SELECT DISTINCT Manufacturer_Name, avg(PRICE)
+FROM Products
+LEFT JOIN Manufacturers ON products.Manufacturer = Manufacturers.Code
+GROUP BY Manufacturer_Name
+HAVING avg(PRICE) &gt;= 150;</sql><sql name="1.15">-- Select the name and price of the cheapest product.
+
+SELECT Product_Name, min(price)
+FROM Products;</sql><sql name="1.16">-- Select the name of each manufacturer along with the name 
+-- and price of their most expensive product.
+
+SELECT Manufacturer_Name, Product_Name, Max(price)
+FROM Products
+LEFT JOIN Manufacturers ON products.Manufacturer = Manufacturers.Code
+GROUP BY Manufacturer_Name</sql><sql name="1.17">-- Add a new product: Loudspeakers, $70, manufacturer 2.
+
+INSERT INTO Products
+VALUES (11,'Loudspeakers',70,2);</sql><sql name="1.18">-- Update the name of product 8 to &quot;Laser Printer&quot;.
+
+UPDATE Products
+SET Product_Name = 'Laser Printer'
+WHERE Code = 8;</sql><sql name="1.19">-- Apply a 10% discount to all products.
+
+UPDATE Products
+SET Price = (price) * (1-0.1)</sql><sql name="1.20">-- Apply a further 10% discount to 
+-- all products with a price larger than or equal to $120.
+
+UPDATE Products
+SET Price = (price) * (1-0.1)
+WHERE Price &gt;= 120</sql><current_tab id="10"/></tab_sql></sqlb_project>

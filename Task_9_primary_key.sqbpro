@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="Task_9.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="1271"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="cran_logs_2015" custom_title="0" dock_id="1" table="4,14:maincran_logs_2015"/><dock_state state="000000ff00000000fd00000001000000020000033b00000226fc0100000001fb000000160064006f0063006b00420072006f007700730065003101000000000000033b0000013300ffffff0000033b0000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="cran_logs_2015" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="94"/><column index="2" value="70"/><column index="3" value="70"/><column index="4" value="61"/><column index="5" value="54"/><column index="6" value="101"/><column index="7" value="171"/><column index="8" value="109"/><column index="9" value="51"/><column index="10" value="36"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="Create_Fill">-- Create tables
+-- Done via CSV upload
+-- No DATETIME format --&gt; needs to be dealt with in code
+</sql><sql name="Insert_primary_key*">-- Self-selected task to introduce primary KEY
+
+
+CREATE TABLE cran_logs_2015_new (
+Row_id integer primary key autoincrement,
+download_date text,
+time text,
+size INTEGER,
+r_version text, 
+r_arch text,
+r_os text,
+package text,
+version text,
+country text,
+ip_id INTEGER
+);
+
+INSERT INTO cran_logs_2015_new (
+download_date, time, size, r_version, r_arch, r_os, package, version, country, ip_id
+)
+SELECT download_date, time, size, r_version, r_arch, r_os, package, version, country, ip_id
+FROM cran_logs_2015;
+
+-- And rename the table:
+DROP TABLE cran_logs_2015;
+ALTER TABLE cran_logs_2015_new RENAME TO cran_logs_2015;
+
+
+-- LIFT &amp; SHIFT of existing table neccessary for creation of Composite Primary Key using 
+-- combination of &quot;ip_id&quot; &amp; &quot;time&quot;
+
+</sql><sql name="9.1">-- Select the package name and how many times they're downloaded. 
+-- Order by highest to lowest number of times downloaded.
+
+
+SELECT package, COUNT (package) AS Count_Package
+FROM cran_logs_2015
+GROUP BY package
+ORDER BY Count_Package DESC;
+
+--&gt; SUM of COUNT_Package checks out with total lines in base table
+</sql><sql name="9.2_?">-- Select the package ranking (based on how many times it was downloaded) during 9AM to 11AM
+-- Note to self: I assigned primary key to ip_id to make it 'unique' for the count function
+-- Used window function
+-- Question. when to use RANK or DENSE_RANKE
+
+
+SELECT package, 
+	COUNT(ip_id) AS Downloads,
+	dense_rank () OVER (ORDER BY COUNT(ip_id) DESC) AS Download_Rank
+FROM cran_logs_2015
+WHERE time like ('09%') OR time like ('10%')
+GROUP BY package
+
+
+-- Test for overall count of lines fullfilling condition
+SELECT *
+FROM cran_logs_2015
+WHERE time like ('09%') OR time like ('10%')
+
+
+
+</sql><sql name="9.3">-- How many records (downloads) are from China (&quot;CN&quot;), Japan(&quot;JP&quot;) or Singapore (&quot;SG&quot;)?
+
+SELECT country, COUNT(ip_id) AS Downloads
+FROM cran_logs_2015
+WHERE Country IN ('CN','JP','SG')
+GROUP BY country
+
+</sql><sql name="9.4">-- Select the countries with more downloads than the downloads from China (&quot;CN&quot;)
+
+
+-- CHINA_only
+SELECT COUNT(ip_id) AS Downloads
+FROM cran_logs_2015
+WHERE Country = 'CN'
+
+-- Final code, Using above as subquery
+SELECT country, COUNT(ip_id) AS Downloads
+FROM cran_logs_2015
+GROUP BY country
+HAVING Downloads &gt; (SELECT COUNT(ip_id) FROM cran_logs_2015 WHERE Country = 'CN')
+
+</sql><sql name="9.5_?">-- (1) Calculate the length (number of letters) of each package name for packages which appear only once,
+
+
+SELECT DISTINCT package, length(package) AS Length_package, COUNT(*) as Count_package
+FROM cran_logs_2015
+GROUP BY package
+HAVING Count_package = 1
+ORDER BY COUNT(*) ASC
+
+
+-- (2) In the same query, also show the average length of all the packages which appear only once.
+
+-- STEP01 : Calculate AVG package length, this one returns AVG overall records
+SELECT DISTINCT AVG(Length(package)) AS Average_Package_Length
+FROM cran_logs_2015
+
+-- FINAL Step : Result differs from LMS (AVG = 7.488), I used ip_id = primary key
+SELECT DISTINCT package, length(package) AS Length_package, COUNT(*) as Count_package,
+AVG(length(package)) OVER (PARTITION BY ip_id) AS Average_Package_Length
+FROM cran_logs_2015
+GROUP BY package
+HAVING Count_package = 1
+ORDER BY COUNT(*) ASC
+
+
+</sql><sql name="9.6">-- Select the package name and download count for the package whose download count ranks 2nd.
+
+
+SELECT package, COUNT (package) AS Count_Package,
+	RANK () OVER (ORDER BY COUNT (package) DESC) AS Download_Rank
+FROM cran_logs_2015
+GROUP BY package
+LIMIT 1 OFFSET 1</sql><sql name="9.7">-- Select the name of the package with a download count higher than 1000.
+
+SELECT package, COUNT (package) AS Count_Package,
+	RANK () OVER (ORDER BY COUNT (package) DESC) AS Download_Rank
+FROM cran_logs_2015
+GROUP BY package
+HAVING Count_Package &gt; 1000;
+
+
+</sql><sql name="9.8">-- (1) The field &quot;r_os&quot; is the operating system of the users. 
+-- Select the system, the relevant counts, and the proportion (in percentage).
+
+
+SELECT r_os, COUNT(*) AS Count_OP,
+	(COUNT(*)*100*1.0)/(SELECT COUNT(*) FROM cran_logs_2015) as Percent_Share
+-- ((COUNT(*) / 62324) * 100) as Percent_Share
+FROM cran_logs_2015
+GROUP BY r_os
+ORDER BY COUNT(*) DESC
+
+
+
+-- (2) Do the same, but see if you can find a way to ignore the version variations (optional).
+-- Use SUBSTR(DATE, 1, 5)
+-- IDEA limit r_os to first six characters. This should help to avoid versions in text string
+
+SELECT substr(r_os, 1, 6) AS OS_Short, COUNT(*) AS Count_OP,
+	(COUNT(*)*100*1.0)/(SELECT COUNT(*) FROM cran_logs_2015) as Percent_Share
+-- ((COUNT(*) / 62324) * 100) as Percent_Share
+FROM cran_logs_2015
+GROUP BY OS_Short
+ORDER BY COUNT(*) DESC
+
+
+</sql><current_tab id="1"/></tab_sql></sqlb_project>
